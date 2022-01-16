@@ -5,6 +5,10 @@ import file_system
 import matplotlib.pyplot as plt
 from matplotlib.colors import is_color_like
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+
+# import ML models
+
 
 
 # initialize colorama
@@ -44,8 +48,10 @@ GLOBAL_SETTINGS = Settings()
 
 
 
-def print_err(text):
-    print(Fore.RED + text)
+
+
+
+
 
 
 
@@ -53,6 +59,12 @@ def print_err(text):
 # ===========================================
 #            GLOBAL FUNCTIONS
 # ===========================================
+
+
+# used to print error messages
+def print_err(text):
+    print(Fore.RED + text)
+
 
 
 # 1-variable stats on a whole column
@@ -140,7 +152,7 @@ def series_scatter(column: pd.Series):
 
 
 
-
+# Helper function used in numericizing columns from objects to a series of binary columns
 def binarize_lambda(row, column_name,value) -> int:
     if row[column_name] == value:
         return 1
@@ -265,8 +277,12 @@ class Dataframe:
         return list(self.df.columns)
 
 
+    def column_exists(self, column_name: str) -> bool:
+        return column_name in self.get_all_column_names()
+
+
     def get_column(self, column_key: str) -> pd.Series:
-        if column_key not in self.df.columns:
+        if not self.column_exists(column_key):
             print_err("ERROR: Column " + column_key + " does not exist")
             return None
         return self.df[column_key]
@@ -497,8 +513,12 @@ class BasicPlot:
         regression_line = self.variables["regression_line"]
 
         if vars is None:
-            if len(x) != len(y):
+            if x is None or y is None:
+                print_err("ERROR: x and y must both be defined as a series")
+                return
+            elif len(x) != len(y):
                 print_err("ERROR: x and y are not the same length")
+                return
             else:
                 x_label = xlabel if xlabel is not None else str(x.name)
                 y_label = ylabel if ylabel is not None else str(y.name)
@@ -562,6 +582,111 @@ class BasicPlot:
 
 
 
+
+
+
+
+
+##############################################################################################
+#                              [   MACHINE LEARNING SECTION   ]
+##############################################################################################
+
+
+
+# ===========================================
+#           REGRESSOR [ABSTRACT CLASS]
+# ===========================================
+class Regressor:
+
+    def __init__(self, dataframe: Dataframe):
+        self.df: Dataframe = dataframe
+        self.inputs: list = []
+        self.outputs: list = []
+        self.fitted: bool = False
+        self.model = None
+        self.test_set_ratio = 0.15
+
+        self.type = "mlp"
+
+        self.TYPES = [
+            "mlp",
+            "svr",
+            "decision_tree",
+            "linear"
+        ]
+
+
+        # MLP variables
+        self.hidden = [64]
+        self.solver = "lbfgs"
+
+        self.SOLVERS = [
+            "lbfgs",
+            "adam",
+            "sgd"
+        ]
+
+        self.learning_rates = [
+            "constant",
+            "invscaling",
+            "adaptive"
+        ]
+
+
+        self.X_train = None
+        self.X_test = None
+        self.y_train = None
+        self.y_test = None
+
+
+
+    def add_input(self, column_name: str):
+        if not self.df.column_exists(column_name):
+            print_err("ERROR: " + column_name + " does not exist in the dataframe")
+
+        elif str(self.df.get_column(column_name).dtype) == "object":
+            print_err("ERROR: columns must be numeric, type object is not allowed in ML models")
+
+        elif column_name in self.outputs:
+            print_err("ERROR: " + column_name + " is an output and cannot be an input")
+
+        else:
+            self.inputs.append(column_name)
+            self.fitted = False
+
+
+
+    def remove_input(self, column_name: str):
+        if column_name in self.inputs:
+            self.inputs.remove(column_name)
+            self.fitted = False
+        else:
+            print_err("ERROR: " + column_name + " is not in the inputs")
+
+
+
+    def add_output(self, column_name: str):
+        if not self.df.column_exists(column_name):
+            print_err("ERROR: " + column_name + " does not exist in the dataframe")
+
+        elif str(self.df.get_column(column_name).dtype) == "object":
+            print_err("ERROR: columns must be numeric, type object is not allowed in ML models")
+
+        elif column_name in self.inputs:
+            print_err("ERROR: " + column_name + " is an input and cannot be an output")
+
+        else:
+            self.outputs.append(column_name)
+            self.fitted = False
+
+
+
+    def remove_output(self, column_name: str):
+        if column_name in self.outputs:
+            self.outputs.remove(column_name)
+            self.fitted = False
+        else:
+            print_err("ERROR: " + column_name + " is not in the outputs")
 
 
 
