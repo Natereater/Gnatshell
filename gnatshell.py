@@ -164,11 +164,14 @@ def handle_define_command(command: list, memory: ds.MemoryBank):
             return
 
         try:
-            variable = ds.Dataframe(command[3], memory)
+            if len(command) > 4:
+                variable = ds.Dataframe(command[3], memory, command[4])
+            else:
+                variable = ds.Dataframe(command[3], memory)
             memory.add_var(variable_name, variable)
             full_format("<<-- " + variable_name, Fore.MAGENTA)
         except:
-            print_err("ERROR: " + command[3] + " is not a viable path")
+            print_err("ERROR: failed to create dataframe")
 
 
 

@@ -105,14 +105,14 @@ def textual_confusion_matrix(matrix: np.ndarray, labels):
 
     box[0].append(" ")
     for i in range(len(labels)):
-        item = labels[i] + "_pred"
+        item = str(labels[i]) + "_pred"
         box[0].append(item)
         if len(item) > col_widths[i + 1]:
             col_widths[i + 1] = len(item)
 
     for row in range(size):
-        item = labels[row] + "_true"
-        box[row + 1].append(labels[row] + "_true")
+        item = str(labels[row]) + "_true"
+        box[row + 1].append(item)
         if len(item) > col_widths[0]:
             col_widths[0] = len(item)
 
@@ -347,11 +347,28 @@ class Dataframe:
     Main data structure for a pandas dataframe
     """
 
-    def __init__(self, csv_name: str, memory_bank:MemoryBank):
+    def __init__(self, csv_name: str, memory_bank:MemoryBank, delimeter=None):
         path = memory_bank.variables["base"].cwd
         path = path.replace("~", memory_bank.variables["base"].base)
         path += "/" + csv_name
-        self.df = pd.read_csv(path)
+
+        if delimeter is None:
+            self.df = pd.read_csv(path)
+        elif delimeter == "whitespace":
+            self.df = pd.read_csv(path, delim_whitespace=True)
+        else:
+            self.df = pd.read_csv(path, sep=delimeter)
+
+
+        # Remove all spaces from names
+        renames = dict()
+        for column in self.df.columns:
+            new_name = column.replace(" ", "_")
+            if column != new_name:
+                renames[column] = new_name
+
+        if len(renames) > 0:
+            self.df = self.df.rename(columns=renames)
 
 
     def get_all_column_names(self) -> list:
@@ -763,6 +780,7 @@ class Model:
         self.confusion_matrix = None
 
         self.class_labels = None
+        self.labeled = False
 
         self.X_train = None
         self.X_test = None
@@ -774,7 +792,13 @@ class Model:
 
 
     def add_input(self, column_name: str):
-        if not self.df.column_exists(column_name):
+        if column_name == "**":
+            for each_col in self.df.get_all_column_names():
+                if str(self.df.get_column(each_col).dtype) != "object":
+                    self.inputs.append(each_col)
+                    self.fitted = False
+
+        elif not self.df.column_exists(column_name):
             print_err("ERROR: " + column_name + " does not exist in the dataframe")
 
         elif str(self.df.get_column(column_name).dtype) == "object":
@@ -818,8 +842,11 @@ class Model:
                 if self.df.column_exists(unclassified):
                     codes, uniques = pd.factorize(self.df.get_column(unclassified))
                     self.class_labels = uniques
+                    self.labeled = True
             else:
-                self.class_labels = None
+                codes, uniques = pd.factorize(self.df.get_column(column_name))
+                self.class_labels = uniques
+                self.labeled = False
             self.fitted = False
 
 
@@ -955,7 +982,7 @@ class Model:
 
                 # show the output
                 build_string += self.outputs[0] + ": "
-                if self.model_type == "regressor" or self.class_labels is None:
+                if self.model_type == "regressor" or not self.labeled:
                     build_string += str(round(self.df.df.at[index, self.outputs[0]], round_to)) + "\n"
                 else:
                     label_index = self.df.df.at[index, self.outputs[0]]
@@ -964,7 +991,7 @@ class Model:
 
                 # show the predicted output
                 build_string += self.outputs[0] + "_prediction: "
-                if self.model_type == "regressor" or self.class_labels is None:
+                if self.model_type == "regressor" or not self.labeled:
                     build_string += str(round(self.y_pred[i], round_to)) + "\n"
                 else:
                     label_index = self.y_pred[i]
@@ -1153,7 +1180,10 @@ class Model:
             self.correctness.append(1 if test_val == pred_val else 0)
 
         self.correctness = pd.Series(self.correctness)
-        self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred)
+        if self.labeled:
+            self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred)
+        else:
+            self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred, labels=self.class_labels)
 
 
 
