@@ -4,11 +4,16 @@ import pandas as pd
 import file_system
 import matplotlib.pyplot as plt
 from matplotlib.colors import is_color_like
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+import numpy as np
+
 
 # import ML models
-
+from sklearn.linear_model import LinearRegression, SGDClassifier, SGDRegressor
+from sklearn.neural_network import MLPRegressor, MLPClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR, SVC
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 
 # initialize colorama
@@ -64,6 +69,84 @@ GLOBAL_SETTINGS = Settings()
 # used to print error messages
 def print_err(text):
     print(Fore.RED + text)
+
+
+
+def msg_box(msg, indent=1, width=None, title=None):
+    """
+    put text in message-box with optional title.
+    """
+    lines = msg.split('\n')
+    space = " " * indent
+    if not width:
+        width = max(map(len, lines))
+    box = f'╔{"═" * (width + indent * 2)}╗\n'  # upper_border
+    if title:
+        box += f'║{space}{title:<{width}}{space}║\n'  # title
+        box += f'║{space}{"-" * len(title):<{width}}{space}║\n'  # underscore
+    box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
+    box += f'╚{"═" * (width + indent * 2)}╝'  # lower_border
+    return box
+
+
+
+
+def textual_confusion_matrix(matrix: np.ndarray, labels):
+    box = [[]]
+    col_widths = [0]
+    size = matrix.shape[0]
+    build_string = ""
+    sum = 0
+
+    for i in range(size):
+        box.append([])
+        col_widths.append(0)
+
+
+    box[0].append(" ")
+    for i in range(len(labels)):
+        item = labels[i] + "_pred"
+        box[0].append(item)
+        if len(item) > col_widths[i + 1]:
+            col_widths[i + 1] = len(item)
+
+    for row in range(size):
+        item = labels[row] + "_true"
+        box[row + 1].append(labels[row] + "_true")
+        if len(item) > col_widths[0]:
+            col_widths[0] = len(item)
+
+        for col in range(size):
+            item = matrix[row, col]
+            box[row + 1].append(item)
+            if len(str(item)) > col_widths[col]:
+                col_widths[col] = len(item)
+
+
+    for i in range(len(col_widths)):
+        sum += col_widths[i]
+    sum += 3 * (len(col_widths) - 1)
+
+
+    for row in range(len(box)):
+        for col in range(len(box[row])):
+            item = str(box[row][col])
+            build_string += item
+            spaces = col_widths[col] - len(item)
+            build_string += " " * spaces
+            if col < len(box[row]) - 1:
+                build_string += " | "
+
+        if row < len(box) - 1:
+            build_string += "\n"
+            build_string += "-" * sum
+            build_string += "\n"
+
+    return msg_box(build_string)
+
+
+
+
 
 
 
@@ -153,13 +236,11 @@ def series_scatter(column: pd.Series):
 
 
 # Helper function used in numericizing columns from objects to a series of binary columns
-def binarize_lambda(row, column_name,value) -> int:
+def binarize_lambda(row, column_name, value) -> int:
     if row[column_name] == value:
         return 1
     else:
         return 0
-
-
 
 
 
@@ -393,6 +474,24 @@ class Dataframe:
 
 
 
+    def classify(self, column_name: str, vars=None):
+        column: pd.Series = self.get_column(column_name)
+
+        # Error if column doesn't exist
+        if column is None:
+            print_err("ERROR: " + column_name + " is not a column in this dataframe")
+            return
+        # Error is column is already numerical
+        elif str(column.dtype) != "object":
+            print_err("ERROR: " + column_name + " is not an object column")
+            return
+
+        # Past error catching, now classify the column
+        all_counts = column.value_counts()
+
+        header = column_name + "_classified"
+        self.df[header] = pd.factorize(self.df[column_name])[0]
+
 
 
 
@@ -579,6 +678,21 @@ class BasicPlot:
 
 
 
+    def view_subsection(self, subsection, vars=None) -> str:
+        if subsection in self.variables:
+            return str(self.variables[subsection])
+        else:
+            print_err("ERROR: " + subsection + " is not a valid basic_plot variable")
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -594,12 +708,18 @@ class BasicPlot:
 
 
 # ===========================================
-#           REGRESSOR [ABSTRACT CLASS]
+#                    MODEL
 # ===========================================
-class Regressor:
+class Model:
 
     def __init__(self, dataframe: Dataframe):
+        # Whether classifier or regressor
+        self.model_type = "regressor"
+
+        # Dataframe used for all data
         self.df: Dataframe = dataframe
+
+        # Mutable variables
         self.inputs: list = []
         self.outputs: list = []
         self.fitted: bool = False
@@ -610,7 +730,7 @@ class Regressor:
 
         self.TYPES = [
             "mlp",
-            "svr",
+            "svm",
             "decision_tree",
             "linear"
         ]
@@ -619,6 +739,8 @@ class Regressor:
         # MLP variables
         self.hidden = [64]
         self.solver = "lbfgs"
+        self.learning_rate = "constant"
+        self.lr_init = 0.001
 
         self.SOLVERS = [
             "lbfgs",
@@ -626,17 +748,28 @@ class Regressor:
             "sgd"
         ]
 
-        self.learning_rates = [
+        self.LEARNING_RATES = [
             "constant",
             "invscaling",
             "adaptive"
         ]
 
 
+
+        self.diff_frame = None
+        self.abs_diff_frame = None
+
+        self.correctness = None
+        self.confusion_matrix = None
+
+        self.class_labels = None
+
         self.X_train = None
         self.X_test = None
         self.y_train = None
         self.y_test = None
+        self.y_pred = None
+
 
 
 
@@ -666,7 +799,10 @@ class Regressor:
 
 
     def add_output(self, column_name: str):
-        if not self.df.column_exists(column_name):
+        if len(self.outputs) > 0:
+            print_err("ERROR: model only supports one output column")
+
+        elif not self.df.column_exists(column_name):
             print_err("ERROR: " + column_name + " does not exist in the dataframe")
 
         elif str(self.df.get_column(column_name).dtype) == "object":
@@ -677,6 +813,13 @@ class Regressor:
 
         else:
             self.outputs.append(column_name)
+            if column_name.endswith("_classified"):
+                unclassified = column_name[:-11]
+                if self.df.column_exists(unclassified):
+                    codes, uniques = pd.factorize(self.df.get_column(unclassified))
+                    self.class_labels = uniques
+            else:
+                self.class_labels = None
             self.fitted = False
 
 
@@ -687,6 +830,426 @@ class Regressor:
             self.fitted = False
         else:
             print_err("ERROR: " + column_name + " is not in the outputs")
+
+
+
+    def view(self, vars=None) -> str:
+
+        # If vars is none then just display stats
+        if vars is None:
+            # Inputs
+            build_string = "INPUTS:\n"
+            for col in self.inputs:
+                build_string += "  " + col + "\n"
+
+            # Outputs
+            build_string += "\nOUTPUTS:\n"
+            for col in self.outputs:
+                build_string += "  " + col + "\n"
+            build_string += "\n"
+
+            # Fitted
+            build_string += "fitted: " + str(self.fitted) + "\n"
+
+            # Test set ratio
+            build_string += "test_set_ratio: " + str(self.test_set_ratio) + "\n"
+
+            # Type
+            build_string += "type: " + self.type + "\n\n"
+
+
+
+            # Vars for MLP NNet
+            if self.type == "mlp":
+
+                # Hidden
+                build_string += "hidden: " + str(self.hidden) + "\n"
+
+                # Solver
+                build_string += "solver: " + str(self.solver) + "\n"
+
+                # Learning Rate
+                build_string += "learning_rate: " + str(self.learning_rate) + "\n"
+
+                # Learning Rate Init
+                build_string += "lr_init: " + str(self.lr_init) + "\n"
+
+            return build_string
+
+
+
+
+        # RESULTS for regressor
+        elif vars[0] == "results" and self.model_type == "regressor":
+            if not self.fitted:
+                print_err("ERROR: regressor must be fitted to view results")
+                return
+
+            build_string = "PREDICTED VS ACTUAL:\n"
+            build_string += "==========================\n"
+            build_string += get_series_stats(self.diff_frame)
+            build_string += "\n\n\n"
+
+            build_string += "ABSOLUTE VALUE OF PREDICTED VS ACTUAL:\n"
+            build_string += "==========================\n"
+            build_string += get_series_stats(self.abs_diff_frame)
+
+            return build_string
+
+
+
+        # RESULTS for classifier
+        elif vars[0] == "results" and self.model_type == "classifier":
+            if not self.fitted:
+                print_err("ERROR: regressor must be fitted to view results")
+                return
+
+            build_string = "ACCURACY LIST (1 = correct, 0 = wrong):\n"
+            build_string += "==========================\n"
+            build_string += get_series_stats(self.correctness)
+            build_string += "\n\n\n\n"
+
+            build_string += "CONFUSION MATRIX:\n"
+            build_string += "==========================\n"
+            build_string += "\n\n"
+            build_string += textual_confusion_matrix(self.confusion_matrix, self.class_labels)
+            return build_string
+
+
+
+
+
+
+        # EXAMPLES
+        elif vars[0] == "examples":
+            if not self.fitted:
+                print_err("ERROR: regressor must be fitted to view examples")
+                return
+
+            build_string = ""
+            num_examples = 10
+            round_to = int(GLOBAL_SETTINGS.get_setting("round_to"))
+
+            if len(vars) > 1:
+                try:
+                    num_examples = int(vars[1])
+                except:
+                    print_err("ERROR: " + vars[1] + " is not a valid integer, defaulting to 10.")
+
+
+            # Make sure to not overflow beyond number of predictions
+            if len(self.y_pred) < num_examples:
+                num_examples = len(self.y_pred)
+
+            # for each example
+            for i in range(num_examples):
+                index = self.y_test.index[i]
+
+                build_string += "\n\n==========================\n"
+                # show each input
+                for input in self.inputs:
+                    build_string += input + ": "
+                    build_string += str(round(self.df.df.at[index, input], round_to)) + "\n"
+
+
+
+                # show the output
+                build_string += self.outputs[0] + ": "
+                if self.model_type == "regressor" or self.class_labels is None:
+                    build_string += str(round(self.df.df.at[index, self.outputs[0]], round_to)) + "\n"
+                else:
+                    label_index = self.df.df.at[index, self.outputs[0]]
+                    build_string += str(self.class_labels[label_index]) + "\n"
+
+
+                # show the predicted output
+                build_string += self.outputs[0] + "_prediction: "
+                if self.model_type == "regressor" or self.class_labels is None:
+                    build_string += str(round(self.y_pred[i], round_to)) + "\n"
+                else:
+                    label_index = self.y_pred[i]
+                    build_string += str(self.class_labels[label_index]) + "\n"
+
+
+                build_string += "==========================\n"
+
+            return build_string
+
+
+
+
+
+
+
+
+    def view_subsection(self, subsection, vars=None) -> str:
+        build_string = ""
+
+        if subsection == "inputs":
+            # Inputs
+            build_string += "INPUTS:\n"
+            for col in self.inputs:
+                build_string += "  " + col + "\n"
+
+        elif subsection == "inputs":
+            build_string += "OUTPUTS:\n"
+            for col in self.outputs:
+                build_string += "  " + col + "\n"
+
+        elif subsection == "fitted":
+            build_string = str(self.fitted)
+
+        elif subsection == "test_set_ratio":
+            build_string = str(self.test_set_ratio)
+
+        elif subsection == "type":
+            build_string = str(self.type)
+
+        elif subsection == "hidden":
+            build_string = str(self.hidden)
+
+        elif subsection == "solver":
+            build_string = str(self.solver)
+
+        elif subsection == "learning_rate":
+            build_string = str(self.learning_rate)
+
+        elif subsection == "lr_init":
+            build_string = str(self.lr_init)
+
+        else:
+            print_err("ERROR: " + subsection + " is not a known regressor variable")
+
+
+
+
+
+
+    # SET variable to a value
+    def set(self, name: str, value, vars=None):
+
+        if name == "model_type":
+            if value == "regressor" or value == "classifier":
+                self.model_type = value
+            else:
+                print_err("ERROR: " + value + " is not a valid model_type, must be classifier or regressor")
+
+        # test_set_ratio
+        elif name == "test_set_ratio":
+            try:
+                r = float(value)
+                if r <= 0:
+                    print_err("ERROR: test_set_ratio must be positive")
+                    return
+                self.test_set_ratio = r
+            except:
+                print_err("ERROR: test_set_ratio must be a positive float")
+
+
+        # type
+        elif name == "type":
+            if value in self.TYPES:
+                self.type = value
+                self.fitted = False
+            else:
+                print_err("ERROR: " + value + " is an invalid type, must be in set: " + str(self.TYPES))
+
+
+        # hidden
+        elif name == "hidden":
+            old_hidden = self.hidden
+
+            try:
+                hid = int(value)
+                self.hidden = [hid]
+            except:
+                print_err("ERROR: " + value + " is not a valid integer")
+                return
+
+            if vars is not None:
+                for element in vars:
+                    try:
+                        hid = int(element)
+                        self.hidden.append(hid)
+                    except:
+                        print_err("ERROR: " + element + " is not a valid integer")
+                        self.hidden = old_hidden
+                        return
+            self.fitted = False
+
+
+        # solver
+        elif name == "solver":
+            if value in self.SOLVERS:
+                self.solver = value
+                self.fitted = False
+            else:
+                print_err("ERROR: " + value + " is an invalid solver, must be in set: " + str(self.SOLVERS))
+
+
+        # learning_rate
+        elif name == "learning_rate":
+            if value in self.LEARNING_RATES:
+                self.learning_rate = value
+                self.fitted = False
+            else:
+                print_err("ERROR: " + value + " is an invalid learning_rate, must be in set: " + str(self.LEARNING_RATES))
+
+
+        # lr_init (initial learning rate)
+        elif name == "lr_init":
+            try:
+                lr = float(value)
+                if lr < 0:
+                    print_err("ERROR: lr_init must be positive")
+                    return
+                self.lr_init = lr
+                self.fitted = False
+            except:
+                print_err("ERROR: lr_init must be a positive float")
+
+
+        else:
+            print_err("ERROR: " + name + " is not a known regressor variable")
+
+
+
+    def get_subsection(self, subsection: str):
+        print_err("ERROR: regressor does not implement getting subsections")
+
+
+
+    def type_string(self):
+        return "model [" + self.model_type + "][" + self.type + "]"
+
+
+
+
+    def __create_difference_columns(self):
+        self.diff_frame = []
+        self.abs_diff_frame = []
+
+        #print(self.y_test)
+        #print(self.y_pred)
+
+        for pi, ti in enumerate(self.y_test.index):
+            test_val = self.y_test[ti]
+            pred_val = self.y_pred[pi]
+
+            self.diff_frame.append(pred_val - test_val)
+            self.abs_diff_frame.append(abs(pred_val - test_val))
+
+        self.diff_frame = pd.Series(self.diff_frame)
+        self.abs_diff_frame = pd.Series(self.abs_diff_frame)
+
+
+
+    def __create_classification_results(self):
+        self.correctness = []
+
+        for pi, ti in enumerate(self.y_test.index):
+            test_val = self.y_test[ti]
+            pred_val = self.y_pred[pi]
+            self.correctness.append(1 if test_val == pred_val else 0)
+
+        self.correctness = pd.Series(self.correctness)
+        self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred)
+
+
+
+
+
+    def fit(self):
+        if len(self.outputs) < 1:
+            print_err("ERROR: output field is empty")
+            return
+
+        if len(self.inputs) < 1:
+            print_err("ERROR: inputs are empty")
+            return
+
+                # Inputs and output values
+        X = self.df.df[self.inputs]
+        y = self.df.df[self.outputs[0]]
+
+        # Train test split
+        self.X_train, \
+        self.X_test, \
+        self.y_train, \
+        self.y_test = train_test_split(X, y, test_size=self.test_set_ratio)
+
+
+        # Models for regression
+        if self.model_type == "regressor":
+            # get the type
+            if self.type == "mlp":
+                # Initialize the model
+                self.model = MLPRegressor(hidden_layer_sizes=self.hidden,
+                                          activation=GLOBAL_SETTINGS.get_setting("activation"),
+                                          solver=self.solver,
+                                          alpha=float(GLOBAL_SETTINGS.get_setting("mlp_alpha")),
+                                          learning_rate=self.learning_rate,
+                                          learning_rate_init=self.lr_init)
+
+            elif self.type == "svm":
+                # Initialize the model
+                self.model = SVR()
+
+            elif self.type == "linear":
+                self.model = LinearRegression()
+
+            elif self.type == "decicion_tree":
+                self.model = DecisionTreeRegressor()
+
+
+
+        # Models for classification
+        elif self.model_type == "classifier":
+            # get the type
+            if self.type == "mlp":
+                # Initialize the model
+                self.model = MLPClassifier(hidden_layer_sizes=self.hidden,
+                                          activation=GLOBAL_SETTINGS.get_setting("activation"),
+                                          solver=self.solver,
+                                          alpha=float(GLOBAL_SETTINGS.get_setting("mlp_alpha")),
+                                          learning_rate=self.learning_rate,
+                                          learning_rate_init=self.lr_init)
+
+            elif self.type == "svm":
+                # Initialize the model
+                self.model = SVC()
+
+            elif self.type == "linear":
+                print_err("ERROR: no linear classifier, change type to something else")
+
+            elif self.type == "decicion_tree":
+                self.model = DecisionTreeClassifier()
+
+
+        self.model.fit(self.X_train, self.y_train)
+
+        self.y_pred = self.model.predict(self.X_test)
+
+        self.fitted = True
+
+        # Fill results
+        if self.model_type == "regressor":
+            self.__create_difference_columns()
+        elif self.model_type == "classifier":
+            self.__create_classification_results()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

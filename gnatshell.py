@@ -25,6 +25,7 @@ DEFINE = ["define", "def"]
 # variables that can be created
 DATAFRAME = "dataframe"
 BASIC_PLOT = "basic_plot"
+MODEL = "model"
 #COLUMN = "column"
 
 VIEW = ["view", "v"]
@@ -41,7 +42,13 @@ SET = "set"
 
 NUMERICIZE = "numericize"
 
+CLASSIFY = "classify"
+
 BOOT = "boot"
+
+ADD = "add"
+SUB = "sub"
+FIT = "fit"
 
 
 
@@ -169,6 +176,21 @@ def handle_define_command(command: list, memory: ds.MemoryBank):
         variable = ds.BasicPlot()
         memory.add_var(variable_name, variable)
         full_format("<<-- " + variable_name, Fore.MAGENTA)
+
+
+
+    elif command[2] == MODEL:
+        if len(command) < 4:
+            print_err("ERROR: defining a model needs a dataframe")
+            return
+
+        if memory.var_exists(command[3]) and memory.get_var(command[3]).type_string().startswith("dataframe"):
+            variable = ds.Model(memory.get_var(command[3]))
+            memory.add_var(variable_name, variable)
+            full_format("<<-- " + variable_name, Fore.MAGENTA)
+
+        else:
+            print_err("ERROR: " + command[3] + " is not a dataframe")
 
 
     else:
@@ -329,6 +351,149 @@ def handle_numericize_command(command: list, memory: ds.MemoryBank):
 
 
 
+def handle_classify_command(command: list, memory: ds.MemoryBank):
+    """
+    Handles numericizing columns
+    :param command:
+    :param memory:
+    :return:
+    """
+    if len(command) > 2:
+        vars = command[2:]
+    else:
+        vars = None
+
+
+    if len(command) < 2:
+        print_err("ERROR: classify needs a column to target")
+        return
+
+    elif "." not in command[1]:
+        print_err("ERROR: dataframe.column_name is required when classify a column")
+        return
+
+    else:
+        subcommand = command[1].split(".")
+
+        if not memory.var_exists(subcommand[0]):
+            print_err("ERROR: " + command[1] + " could not be found in memory")
+            return
+
+        elif not memory.get_var(subcommand[0]).type_string().startswith("dataframe"):
+            print_err("ERROR: " + subcommand[0] + " is not a dataframe")
+            return
+
+        else:
+            memory.get_var(subcommand[0]).classify(subcommand[1], vars)
+
+
+
+
+
+
+
+
+def handle_add_command(command: list, memory: ds.MemoryBank):
+    VALID_TYPES = ["model"]
+    valid = False
+
+    if len(command) < 4:
+        print_err("ERROR: add needs an input/output tag, a dataframe, and a column name")
+
+    elif command[1] != "input" and command[1] != "output":
+        print_err("ERROR: " + command[1] + " must be input or output")
+
+
+    elif not memory.var_exists(command[2]):
+
+        print_err("ERROR: " + command[2] + " is not a known variable")
+
+
+    else:
+        # Make sure an ML type
+        item = memory.get_var(command[2])
+        for each in VALID_TYPES:
+            if item.type_string().startswith(each):
+                valid = True
+                break
+
+        if not valid:
+            print_err("ERROR: " + command[2] + " is not an ML structure of the set: " + str(VALID_TYPES))
+            return
+
+        if command[1] == "input":
+            memory.get_var(command[2]).add_input(command[3])
+        else:
+            memory.get_var(command[2]).add_output(command[3])
+
+
+
+
+
+def handle_sub_command(command: list, memory: ds.MemoryBank):
+    VALID_TYPES = ["model"]
+    valid = False
+
+    if len(command) < 4:
+        print_err("ERROR: sub needs an input/output tag, a dataframe, and a column name")
+
+    elif command[1] != "input" and command[1] != "output":
+        print_err("ERROR: " + command[1] + " must be input or output")
+
+    elif not memory.var_exists(command[2]):
+        print_err("ERROR: " + command[2] + " is not a known variable")
+
+    else:
+        # Make sure an ML type
+        item = memory.get_var(command[2])
+        for each in VALID_TYPES:
+            if item.type_string().startswith(each):
+                valid = True
+                break
+
+        if not valid:
+            print_err("ERROR: " + command[2] + " is not an ML structure of the set: " + str(VALID_TYPES))
+            return
+
+
+        if command[1] == "input":
+            item.remove_input(command[3])
+        else:
+            item.remove_output(command[3])
+
+
+
+
+
+
+def handle_fit_command(command: list, memory: ds.MemoryBank):
+    VALID_TYPES = ["model"]
+    valid = False
+
+    if len(command) < 2:
+        print_err("ERROR: fit needs a target ML structure")
+        return
+
+    if not memory.var_exists(command[1]):
+        print_err("ERROR: " + command[1] + " is not a known variable in memory")
+        return
+
+    item = memory.get_var(command[1])
+
+    for each in VALID_TYPES:
+        if item.type_string().startswith(each):
+            valid = True
+            break
+
+    if not valid:
+        print_err("ERROR: " + command[1] + " is not an ML structure of the set: " + str(VALID_TYPES))
+
+    else:
+        item.fit()
+
+
+
+
 
 
 
@@ -364,6 +529,18 @@ def handle_command(command: list, memory: ds.MemoryBank):
 
     elif command[0] == NUMERICIZE:
         handle_numericize_command(command, memory)
+
+    elif command[0] == CLASSIFY:
+        handle_classify_command(command, memory)
+
+    elif command[0] == ADD:
+        handle_add_command(command, memory)
+
+    elif command[0] == SUB:
+        handle_sub_command(command, memory)
+
+    elif command[0] == FIT:
+        handle_fit_command(command, memory)
 
 
 

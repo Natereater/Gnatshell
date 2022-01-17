@@ -1,2 +1,4 @@
 base>D:/Gnatshell/base
 round_to>5
+activation>relu
+mlp_alpha>0.0001

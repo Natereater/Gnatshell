@@ -1,2 +1,2 @@
 # Gnatshell
-A shell for Data Science and possibly other stuff
+A shell for Data Science and possibly other random stuff
