@@ -1219,11 +1219,12 @@ class Model:
                                           solver=self.solver,
                                           alpha=float(GLOBAL_SETTINGS.get_setting("mlp_alpha")),
                                           learning_rate=self.learning_rate,
-                                          learning_rate_init=self.lr_init)
+                                          learning_rate_init=self.lr_init,
+                                          max_iter=int(GLOBAL_SETTINGS.get_setting("max_iter")))
 
             elif self.type == "svm":
                 # Initialize the model
-                self.model = SVR()
+                self.model = SVR(max_iter=int(GLOBAL_SETTINGS.get_setting("max_iter")))
 
             elif self.type == "linear":
                 self.model = LinearRegression()
@@ -1243,11 +1244,12 @@ class Model:
                                           solver=self.solver,
                                           alpha=float(GLOBAL_SETTINGS.get_setting("mlp_alpha")),
                                           learning_rate=self.learning_rate,
-                                          learning_rate_init=self.lr_init)
+                                          learning_rate_init=self.lr_init,
+                                          max_iter=int(GLOBAL_SETTINGS.get_setting("max_iter")))
 
             elif self.type == "svm":
                 # Initialize the model
-                self.model = SVC()
+                self.model = SVC(max_iter=int(GLOBAL_SETTINGS.get_setting("max_iter")))
 
             elif self.type == "linear":
                 print_err("ERROR: no linear classifier, change type to something else")
