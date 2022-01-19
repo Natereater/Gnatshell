@@ -215,21 +215,21 @@ def get_series_stats(column: pd.Series) -> str:
 # box and whisker plot
 def series_boxplot(column: pd.Series):
     plt.boxplot(column)
-    plt.title = str(column.name)
+    plt.title(str(column.name))
     plt.show()
 
 
 # histogram of a single series
 def series_hist(column: pd.Series, bins=10):
     plt.hist(column, bins=bins)
-    plt.title = str(column.name)
+    plt.title(str(column.name))
     plt.show()
 
 
 # scatter of a single series over the index, works great for columns in chronological order
 def series_scatter(column: pd.Series):
     plt.scatter(column.index, column)
-    plt.title = str(column.name)
+    plt.title(str(column.name))
     plt.show()
 
 
@@ -461,6 +461,14 @@ class Dataframe:
             elif vars[0] == COUNTS:
                 all_counts = self.df[subsection].value_counts()
                 return str(all_counts)
+
+            # View a scatter plot
+            elif vars[0] == SCATTER:
+                if str(self.df[subsection].dtype) == "object":
+                    print_err("ERROR: cannot view scatter on series of type object")
+                else:
+                    series_scatter(self.df[subsection])
+                    return "scatter plot"
 
 
 
@@ -1179,6 +1187,7 @@ class Model:
             pred_val = self.y_pred[pi]
             self.correctness.append(1 if test_val == pred_val else 0)
 
+        # TODO: create own confusion matrix to replace this buggy default one
         self.correctness = pd.Series(self.correctness)
         if self.labeled:
             self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred)
