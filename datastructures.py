@@ -4,8 +4,7 @@ import pandas as pd
 import file_system
 import matplotlib.pyplot as plt
 from matplotlib.colors import is_color_like
-from sklearn.metrics import confusion_matrix
-import numpy as np
+#import numpy as np
 
 
 # import ML models
@@ -72,6 +71,31 @@ def print_err(text):
 
 
 
+
+def generate_confusion_matrix(y_test: pd.Series, y_pred, values):
+    # FIRST INDEX IS TRUE
+    # SECOND INDEX IS PRED
+    size = len(values)
+
+    cm = []
+    for i in range(size):
+        cm.append([])
+        for j in range(size):
+            cm[i].append(0)
+
+
+    for index in range(len(y_pred)):
+        test_index = y_test.index[index]
+
+        cm_true_value = y_test[test_index]
+        cm_pred_value = y_pred[index]
+        cm[cm_true_value][cm_pred_value] += 1
+
+    return cm
+
+
+
+
 def msg_box(msg, indent=1, width=None, title=None):
     """
     put text in message-box with optional title.
@@ -91,10 +115,10 @@ def msg_box(msg, indent=1, width=None, title=None):
 
 
 
-def textual_confusion_matrix(matrix: np.ndarray, labels):
+def textual_confusion_matrix(matrix, labels):
     box = [[]]
     col_widths = [0]
-    size = matrix.shape[0]
+    size = len(matrix)
     build_string = ""
     sum = 0
 
@@ -117,7 +141,7 @@ def textual_confusion_matrix(matrix: np.ndarray, labels):
             col_widths[0] = len(item)
 
         for col in range(size):
-            item = matrix[row, col]
+            item = matrix[row][col]
             box[row + 1].append(item)
             if len(str(item)) > col_widths[col]:
                 col_widths[col] = len(item)
@@ -135,14 +159,14 @@ def textual_confusion_matrix(matrix: np.ndarray, labels):
             spaces = col_widths[col] - len(item)
             build_string += " " * spaces
             if col < len(box[row]) - 1:
-                build_string += " | "
+                build_string += " ║ "
 
         if row < len(box) - 1:
             build_string += "\n"
-            build_string += "-" * sum
+            build_string += "═" * sum
             build_string += "\n"
 
-    return msg_box(build_string)
+    return msg_box(build_string, indent=0)
 
 
 
@@ -198,6 +222,16 @@ def get_series_stats(column: pd.Series) -> str:
 
     # Sample standard dev
     build_string += "SAMPLE STD DEV: " + str(round(column.std(ddof=1), round_to)) + "\n"
+
+    # Sample standard dev
+    build_string += "NUM NAN VALUES: " + str(column.isna().sum()) + "\n"
+
+    filled_column = column.fillna(0)
+
+    build_string += "MEAN (NAN = 0): " + str(round(filled_column.mean(), round_to)) + "\n"
+
+    build_string += "MEDIAN (NAN = 0): " + str(round(filled_column.median(), round_to)) + "\n"
+
 
     # Percentiles (5% increment)
     build_string += "\nPERCENTILES:\n"
@@ -788,6 +822,7 @@ class Model:
         self.confusion_matrix = None
 
         self.class_labels = None
+        self.class_values = None
         self.labeled = False
 
         self.X_train = None
@@ -848,12 +883,18 @@ class Model:
             if column_name.endswith("_classified"):
                 unclassified = column_name[:-11]
                 if self.df.column_exists(unclassified):
+                    # Get labels, these are the textual representation in the unclassified column
                     codes, uniques = pd.factorize(self.df.get_column(unclassified))
                     self.class_labels = uniques
+
+                    # Get values, these are the values in the classified column
+                    codes, uniques = pd.factorize(self.df.get_column(column_name))
+                    self.class_values = uniques
                     self.labeled = True
             else:
                 codes, uniques = pd.factorize(self.df.get_column(column_name))
                 self.class_labels = uniques
+                self.class_values = uniques
                 self.labeled = False
             self.fitted = False
 
@@ -889,6 +930,9 @@ class Model:
             # Test set ratio
             build_string += "test_set_ratio: " + str(self.test_set_ratio) + "\n"
 
+            # Model Type (regressor or classifier)
+            build_string += "model_type: " + self.model_type + "\n"
+
             # Type
             build_string += "type: " + self.type + "\n\n"
 
@@ -919,6 +963,7 @@ class Model:
             if not self.fitted:
                 print_err("ERROR: regressor must be fitted to view results")
                 return
+            round_to = int(GLOBAL_SETTINGS.get_setting("round_to"))
 
             build_string = "PREDICTED VS ACTUAL:\n"
             build_string += "==========================\n"
@@ -928,6 +973,15 @@ class Model:
             build_string += "ABSOLUTE VALUE OF PREDICTED VS ACTUAL:\n"
             build_string += "==========================\n"
             build_string += get_series_stats(self.abs_diff_frame)
+
+            build_string += "\n\n\n"
+            build_string += "MEAN ABSOLUTE ERROR: " + str(round(self.abs_diff_frame.mean(), round_to)) + "\n"
+            build_string += "MEAN ABSOLUTE ERROR (in standard deviations): " + \
+                            str(round(self.abs_diff_frame.mean() / self.y_test.std(), round_to)) + "\n"
+            build_string += "MEAN SQUARED ERROR: " + \
+                            str(round((self.abs_diff_frame ** 2).mean(), round_to)) + "\n"
+            build_string += "MEAN SQUARED ERROR (in standard deviations): " + \
+                            str(round((self.abs_diff_frame ** 2).mean() / self.y_test.std(), round_to)) + "\n"
 
             return build_string
 
@@ -1189,10 +1243,9 @@ class Model:
 
         # TODO: create own confusion matrix to replace this buggy default one
         self.correctness = pd.Series(self.correctness)
-        if self.labeled:
-            self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred)
-        else:
-            self.confusion_matrix = confusion_matrix(self.y_test, self.y_pred, labels=self.class_labels)
+
+        self.confusion_matrix = generate_confusion_matrix(self.y_test, self.y_pred,
+                                                          values=self.class_values)
 
 
 
