@@ -4,11 +4,12 @@ import pandas as pd
 import file_system
 import matplotlib.pyplot as plt
 from matplotlib.colors import is_color_like
-#import numpy as np
+import numpy as np
 
 
 # import ML models
-from sklearn.linear_model import LinearRegression, SGDClassifier, SGDRegressor
+#from sklearn.linear_model import LinearRegression
+from linear_reg import LinearRegressionModel as LinearRegression
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVR, SVC
@@ -979,9 +980,9 @@ class Model:
             build_string += "MEAN ABSOLUTE ERROR (in standard deviations): " + \
                             str(round(self.abs_diff_frame.mean() / self.y_test.std(), round_to)) + "\n"
             build_string += "MEAN SQUARED ERROR: " + \
-                            str(round((self.abs_diff_frame ** 2).mean(), round_to)) + "\n"
+                            str(round((self.diff_frame ** 2).mean(), round_to)) + "\n"
             build_string += "MEAN SQUARED ERROR (in standard deviations): " + \
-                            str(round((self.abs_diff_frame ** 2).mean() / self.y_test.std(), round_to)) + "\n"
+                            str(round((self.diff_frame ** 2).mean() / self.y_test.std(), round_to)) + "\n"
 
             return build_string
 
@@ -1260,9 +1261,12 @@ class Model:
             print_err("ERROR: inputs are empty")
             return
 
-                # Inputs and output values
-        X = self.df.df[self.inputs]
-        y = self.df.df[self.outputs[0]]
+        # Inputs and output values
+        shuffled_df = self.df.df.sample(frac=1.0)
+
+        X = shuffled_df[self.inputs]
+        y = shuffled_df[self.outputs[0]]
+        X[GLOBAL_SETTINGS.get_setting("intercept_name")] = np.ones(len(X.index))
 
         # Train test split
         self.X_train, \
