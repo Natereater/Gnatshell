@@ -6,6 +6,12 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import is_color_like
 import numpy as np
 
+# import ML models
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor, MLPClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR, SVC
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 
 

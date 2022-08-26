@@ -7,17 +7,15 @@ from matplotlib.colors import is_color_like
 import numpy as np
 
 
-# import ML models
-#from sklearn.linear_model import LinearRegression
-from linear_reg import LinearRegressionModel as LinearRegression
-from sklearn.neural_network import MLPRegressor, MLPClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVR, SVC
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
-
 
 # initialize colorama
 init(convert=True, autoreset=True)
+
+
+
+# used to print error messages
+def print_err(text):
+    print(Fore.RED + text)
 
 
 
@@ -46,6 +44,8 @@ class Settings:
             return self.settings[key]
         else:
             print_err("ERROR: " + key + " is not a valid setting")
+
+
 
 
 # Instantiate a global settings instance
