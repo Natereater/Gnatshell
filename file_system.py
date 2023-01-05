@@ -38,7 +38,7 @@ class FolderStructure:
 
 
 
-    def dir(self) -> str:
+    def pwd(self) -> str:
         return self.cwd
 
 
@@ -67,10 +67,10 @@ class FolderStructure:
 
         for element in full_list:
             if os.path.isdir(os.path.join(full_path, element)):
-                build_string += Fore.LIGHTMAGENTA_EX + ("  " * num_indents) + element + "\n"
+                build_string += Fore.RESET + ("| " * (num_indents - 1)) + ("┕ " if num_indents > 0 else "") + Fore.LIGHTMAGENTA_EX + element + "\n"
                 build_string += self.__recursive_view_files("", full_path + "/" + element, num_indents + 1)
             else:
-                build_string += Fore.LIGHTBLUE_EX + ("  " * num_indents) + element + "\n"
+                build_string += Fore.RESET + ("| " * (num_indents - 1)) + ("┕ " if num_indents > 0 else "") + Fore.LIGHTBLUE_EX + element + "\n"
         return build_string
 
 
@@ -79,14 +79,7 @@ class FolderStructure:
         build_string = self.__recursive_view_files("", full_path, 0)
         return build_string
 
-
-    def view_subsection(self, subsection, vars=None) -> str:
-        print_err("ERROR: folder_structure does not implement viewing subsections")
-
-    def get_subsection(self, subsection: str):
-        print_err("ERROR: folder_structure does not implement getting subsections")
-
-    def set(self, name: str, value, vars=None):
-        print_err("ERROR: folder_structure does not implement setting variables")
+    def handle(self, command:list):
+        pass
 
 

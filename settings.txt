@@ -1,6 +1,6 @@
-base>D:/Gnatshell/base
-round_to>5
-activation>relu
-mlp_alpha>0.0001
-max_iter>4000
-intercept_name>__intercept__
+FILE SYSTEM SETTINGS
+> base:: C:/work/Gnatshell/base
+
+PASSWD SETTINGS
+> passwd_file:: passwd.txt
+> passwd_key:: key.key

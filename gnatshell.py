@@ -1,7 +1,8 @@
 
-import datastructures as ds
+import memory_bank as mb
 from colorama import init, Fore, Back, Style
 import os
+import data_files_util as dfu
 
 
 # initialize colorama
@@ -19,36 +20,8 @@ PROMPT_SYMBOL = " >> "
 # ===========================================
 EXIT = "exit"
 
-# define keyword is used in defining variables, usage: define variable_name value
-DEFINE = ["define", "def"]
 
-# variables that can be created
-DATAFRAME = "dataframe"
-BASIC_PLOT = "basic_plot"
-MODEL = "model"
-#COLUMN = "column"
 
-VIEW = ["view", "v"]
-
-CLEAR = ["clear", "cls"]
-
-CHANGE_DIRECTORY = "cd"
-DIRECTORY = "dir"
-LIST_DIRECTORY = "ls"
-MAKE_DIRECTORY = "mkdir"
-FILE_SYSTEM_COMMANDS = [CHANGE_DIRECTORY, DIRECTORY, LIST_DIRECTORY, MAKE_DIRECTORY]
-
-SET = "set"
-
-NUMERICIZE = "numericize"
-
-CLASSIFY = "classify"
-
-BOOT = "boot"
-
-ADD = "add"
-SUB = "sub"
-FIT = "fit"
 
 
 
@@ -95,7 +68,7 @@ def string_is_float(string: str) -> bool:
 # ===========================================
 #              COMMAND HANDLERS
 # ===========================================
-def handle_boot_command(command: list, memory: ds.MemoryBank):
+def handle_boot_command(command: list, memory: mb.MemoryBank):
     pass
 
 
@@ -104,7 +77,7 @@ def handle_boot_command(command: list, memory: ds.MemoryBank):
 
 
 # Directs the command based on first keyword
-def handle_command(command: list, memory: ds.MemoryBank):
+def handle_command(command: list, memory: mb.MemoryBank):
     """
     Handles command sent from command loop
     :param command: the command split on spaces
@@ -118,8 +91,8 @@ def handle_command(command: list, memory: ds.MemoryBank):
     if command[0] == EXIT:
         exit(0)
 
-    elif command[0] == BOOT:
-        handle_boot_command(command, memory)
+    else:
+        memory.handle(command)
 
 
 
@@ -137,7 +110,8 @@ def handle_command(command: list, memory: ds.MemoryBank):
 def command_loop():
     done = False
     pinned = None
-    memory = ds.MemoryBank()
+    settings = dfu.Datafile("settings.txt")
+    memory = mb.MemoryBank(settings)
 
     while not done:
         full_format(PROMPT_START_PAR, Fore.GREEN, end="")

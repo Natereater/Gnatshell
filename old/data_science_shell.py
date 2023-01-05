@@ -1,5 +1,5 @@
 
-import datastructures as ds
+import memory_bank as ds
 import data_science_tool as dst
 from colorama import init, Fore, Back, Style
 import os
@@ -74,7 +74,7 @@ def full_format(text, fore_color, back_color=Back.BLACK, end="\n"):
 
 
 def display_header():
-    header_file = open("shell_header.txt", "r")
+    header_file = open("../shell_header.txt", "r")
     full_format(header_file.read(), Fore.GREEN)
 
 
