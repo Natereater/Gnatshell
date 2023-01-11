@@ -4,6 +4,7 @@ import file_system
 import data_files_util as dfu
 import os
 import password_manager
+from dataframe_tool import Dataframe
 
 
 
@@ -17,7 +18,7 @@ def print_err(text):
     print(Fore.RED + text)
 
 
-RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls"]
+RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls", "pin"]
 
 
 
@@ -131,6 +132,25 @@ class MemoryBank:
 
             elif command[0] == "cls":
                 os.system('cls' if os.name == 'nt' else 'clear')
+
+            elif command[0] == "pin":
+                if len(command) < 3:
+                    print_err("ERROR: pinning requires a name and a value")
+                else:
+                    var_name = command[1]
+                    var_value: str = command[2]
+
+                    if var_value.endswith(".csv") or var_value.endswith(".tsv"):
+                        try:
+                            new_var = None
+                            if len(command) > 3:
+                                new_var = Dataframe(csv_name=var_value, memory_bank=self, delimeter=command[3])
+                            else:
+                                new_var = Dataframe(csv_name=var_value, memory_bank=self)
+                            self.add_var(var_name, new_var)
+                            print(Fore.LIGHTGREEN_EX + "+ " + var_name + Fore.RESET)
+                        except:
+                            print_err("ERROR: could not read file: " + command[2])
 
         else:
             if command[0] in self.variables.keys() and command[0] != "mem":
