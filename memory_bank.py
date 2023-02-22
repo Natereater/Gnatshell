@@ -5,6 +5,7 @@ import data_files_util as dfu
 import os
 import password_manager
 from dataframe_tool import Dataframe
+from iaaf_converter import IaafConverter
 
 
 
@@ -40,6 +41,7 @@ class MemoryBank:
         self.variables["base"] = file_system.FolderStructure(settings.get("base"))
         self.variables["passwd"] = password_manager.PasswordManager(settings.get("passwd_file"),
                                                                     settings.get("passwd_key"))
+        self.variables["wa"] = IaafConverter()
 
 
     def var_exists(self, key: str) -> bool:
