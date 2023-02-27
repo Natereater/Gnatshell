@@ -10,6 +10,7 @@ COUNTS = "counts"
 SCATTER = "scatter"
 
 VIEW = "v"
+GRAPH = "graph"
 
 
 
@@ -261,5 +262,13 @@ class Dataframe:
             print(self.view_subsection(subsection=command[2], vars=None))
         elif command[1] == VIEW:
             print(self.view())
+        elif command[1] == GRAPH:
+            if command[2] not in self.get_all_column_names() or command[3] not in self.get_all_column_names():
+                print_err("ERROR: " + command[2] + " and " + command[3] + " must be valid column names")
+            else:
+                plt.scatter(self.df[command[2]], self.df[command[3]])
+                plt.title(str(command[2] + " vs " + command[3]))
+                plt.show()
+
         else:
             print_err("ERROR: unknown dataframe command: " + command[1])
