@@ -8,6 +8,7 @@ VIEW = "v"
 ADD = "add"
 DELETE = "del"
 SAVE = "save"
+HELP = "help"
 
 def print_err(text):
     print(Fore.RED + text)
@@ -42,6 +43,19 @@ class PasswordManager:
     def type_string(self) -> str:
         return "password_manager"
 
+
+    def help(self) -> str:
+        build_str = ""
+        build_str += Fore.LIGHTBLUE_EX
+        build_str += "PASSWORD MANAGER:\n"
+        build_str += "This tool allows you to store, view, and edit encrypted passwords.\n\n"
+        build_str += "VIEW ALL PASSWORDS:\n" + Fore.LIGHTGREEN_EX + "passwd v" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "VIEW A SPECIFIC PASSWORD:\n" + Fore.LIGHTGREEN_EX + "passwd v [name]" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "ADD A PASSWORD:\n" + Fore.LIGHTGREEN_EX + "passwd add [name] [value]" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "DELETE A PASSWORD:\n" + Fore.LIGHTGREEN_EX + "passwd del [name]" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "SAVE ALL CHANGES:\n" + Fore.LIGHTGREEN_EX + "passwd save" + Fore.LIGHTBLUE_EX + "\n\n"
+        return build_str
+
     def handle(self, command:list):
         if len(command) < 2:
             return
@@ -56,6 +70,8 @@ class PasswordManager:
             self.delete(command)
         elif command[1] == SAVE:
             self.save()
+        elif command[1] == HELP:
+            print(self.help())
         else:
             print_err("ERROR: unknown password manager command: " + command[1])
 

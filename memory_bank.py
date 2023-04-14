@@ -19,7 +19,7 @@ def print_err(text):
     print(Fore.RED + text)
 
 
-RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls", "pin"]
+RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls", "pin", "help"]
 
 
 
@@ -102,6 +102,45 @@ class MemoryBank:
         self.variables["base"].mkdir(dir_name)
 
 
+    def help(self) -> str:
+        build_str = ""
+        build_str += Fore.LIGHTBLUE_EX
+        build_str += "GNATSHELL MEMORY BANK AND FILE SYSTEM:\n"
+        build_str += "Default commands for accessing gnatshell memory and programs\n\n"
+
+        build_str += "PRINT WORKING DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "pwd\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "VIEW PROGRAMS:\n"
+        build_str += Fore.LIGHTGREEN_EX + "v\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "VIEW SPECIFIC PROGRAM:\n"
+        build_str += Fore.LIGHTGREEN_EX + "v [program-name]\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "LIST FILES IN DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "ls\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "CHANGE DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "cd [folder-name]\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "GO UP ONE DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "cd ..\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "CLEAR SCREEN:\n"
+        build_str += Fore.LIGHTGREEN_EX + "cls\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "PIN A CSV/TSV FILE AS DATAFRAME:\n"
+        build_str += Fore.LIGHTGREEN_EX + "pin [name-to-store] [filename] " + Fore.LIGHTBLACK_EX + \
+                     "{opt:delimeter}\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "EXIT GNATSHELL:\n"
+        build_str += Fore.LIGHTGREEN_EX + "exit\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "GET HELP ABOUT A PROGRAM:\n"
+        build_str += Fore.LIGHTGREEN_EX + "[program-name] help\n" + Fore.RESET
+        return build_str
+
+
     def handle(self, command:list):
         if command[0] in RESERVED:
 
@@ -134,6 +173,9 @@ class MemoryBank:
 
             elif command[0] == "cls":
                 os.system('cls' if os.name == 'nt' else 'clear')
+
+            elif command[0] == "help":
+                print(self.help())
 
             elif command[0] == "pin":
                 if len(command) < 3:

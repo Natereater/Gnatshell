@@ -11,6 +11,7 @@ SCATTER = "scatter"
 
 VIEW = "v"
 GRAPH = "graph"
+HELP = "help"
 
 
 
@@ -249,6 +250,34 @@ class Dataframe:
                     series_scatter(self.df[subsection])
                     return "scatter plot"
 
+    def help(self) -> str:
+        build_str = ""
+        build_str += Fore.LIGHTBLUE_EX
+        build_str += "DATAFRAME TOOL:\n"
+        build_str += "This tool allows users to pin csvs as dataframes and perform\n"
+        build_str += "analysis on them.\n\n"
+        build_str += "VIEW ALL COLUMN HEADERS:\n" + Fore.LIGHTGREEN_EX + "[name] v columns" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "VIEW HEAD OF DATAFRAME:\n" + Fore.LIGHTGREEN_EX + "[name] v" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "VIEW COLUMN:\n" + Fore.LIGHTGREEN_EX + "[name] v [column]" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "VIEW COLUMN STATS:\n" + Fore.LIGHTGREEN_EX + "[name] v [column] stats" + Fore.LIGHTBLUE_EX + "\n\n"
+
+        build_str += "VIEW COLUMN AS HISTOGRAM:\n"
+        build_str += Fore.LIGHTGREEN_EX + "[name] v [column] hist " + Fore.LIGHTBLACK_EX + \
+                     "{opt:n}\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "VIEW COLUMN AS SCATTER PLOT:\n" + Fore.LIGHTGREEN_EX + "[name] v [column] scatter" \
+                     + Fore.LIGHTBLUE_EX + "\n\n"
+
+        build_str += "VIEW COLUMN AS BOX PLOT:\n" + Fore.LIGHTGREEN_EX + "[name] v [column] boxplot" \
+                     + Fore.LIGHTBLUE_EX + "\n\n"
+
+        build_str += "GRAPH RELATIONSHIP BETWEEN 2 COLUMNS:\n" + Fore.LIGHTGREEN_EX + \
+                     "[name] graph [x-column] [y-column]" \
+                     + Fore.LIGHTBLUE_EX + "\n\n"
+
+        build_str += Fore.RESET
+        return build_str
+
 
 
 
@@ -262,6 +291,8 @@ class Dataframe:
             print(self.view_subsection(subsection=command[2], vars=None))
         elif command[1] == VIEW:
             print(self.view())
+        elif command[1] == HELP:
+            print(self.help())
         elif command[1] == GRAPH:
             if command[2] not in self.get_all_column_names() or command[3] not in self.get_all_column_names():
                 print_err("ERROR: " + command[2] + " and " + command[3] + " must be valid column names")

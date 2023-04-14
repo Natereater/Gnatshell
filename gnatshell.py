@@ -22,13 +22,6 @@ EXIT = "exit"
 
 
 
-
-
-
-
-
-
-
 # ===========================================
 #              GLOBAL FUNCTIONS
 # ===========================================
@@ -48,28 +41,6 @@ def full_format(text, fore_color, back_color=Back.BLACK, end="\n"):
 def display_header():
     header_file = open("shell_header.txt", "r")
     full_format(header_file.read(), Fore.GREEN)
-
-
-
-def string_is_float(string: str) -> bool:
-    try:
-        x = float(string)
-        return True
-    except:
-        return False
-
-
-
-
-
-
-
-
-# ===========================================
-#              COMMAND HANDLERS
-# ===========================================
-def handle_boot_command(command: list, memory: mb.MemoryBank):
-    pass
 
 
 
@@ -93,12 +64,6 @@ def handle_command(command: list, memory: mb.MemoryBank):
 
     else:
         memory.handle(command)
-
-
-
-
-
-
 
 
 

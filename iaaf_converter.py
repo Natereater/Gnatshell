@@ -11,6 +11,7 @@ CONVERT = "convert"
 MARK = "mark"
 POINTS = "points"
 SPREAD = "spread"
+HELP = "help"
 
 
 def print_err(text):
@@ -135,6 +136,29 @@ class IaafConverter:
         return buildstring
 
 
+    def help(self) -> str:
+        build_str = ""
+        build_str += Fore.LIGHTBLUE_EX
+        build_str += "WORLD ATHLETICS COVERSION TABLES:\n"
+        build_str += "The world athletics conversion tables provide a way for track and field events\n"
+        build_str += "to be compared across both events and genders using a points system.\n"
+        build_str += "From any mark in a given event one can get a point value, and from any\n"
+        build_str += "point value one can get a mark for any event.\n"
+        build_str += "* all measurements of length/height are in meters\n\n"
+        build_str += "VIEW ALL AVAILABLE EVENTS:\n" + Fore.LIGHTGREEN_EX + "wa v" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "INSPECT A SPECIFIC EVENT:\n" + Fore.LIGHTGREEN_EX + "wa v [event]" + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "GET POINTS FROM MARK:\n" + Fore.LIGHTGREEN_EX + "wa points [event] [mark]" \
+                     + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "GET MARK FROM POINTS:\n" + Fore.LIGHTGREEN_EX + "wa mark [event] [points]" \
+                     + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "GET EQUIVALENT MARK IN ALL OTHER EVENTS:\n" + Fore.LIGHTGREEN_EX + "wa spread [event] [mark]" \
+                     + Fore.LIGHTBLUE_EX + "\n\n"
+        build_str += "CONVERT A MARK FROM ONE EVENT TO ANOTHER:\n" + Fore.LIGHTGREEN_EX \
+                     + "wa convert [event-1] [mark-in-event-1] [event-2]\n"
+        build_str += Fore.RESET
+        return build_str
+
+
 
     def handle(self, command:list):
         if len(command) < 2:
@@ -191,6 +215,10 @@ class IaafConverter:
                         print(self.tables[command[4]].get_formatted_mark(points))
                     except:
                         print_err("ERROR: " + command[3] + " is not a valid mark for the " + command[2])
+
+        elif command[1] == HELP:
+            print(self.help())
+
 
         else:
             print_err("ERROR: unknown world athletics conversion command: " + command[1])
