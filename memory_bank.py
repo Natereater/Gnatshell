@@ -6,6 +6,8 @@ import os
 import password_manager
 from dataframe_tool import Dataframe
 from iaaf_converter import IaafConverter
+from wikipedia import Wikipedia
+from drg_reddit_scraper import DRGRedditScraper
 
 
 
@@ -42,6 +44,8 @@ class MemoryBank:
         self.variables["passwd"] = password_manager.PasswordManager(settings.get("passwd_file"),
                                                                     settings.get("passwd_key"))
         self.variables["wa"] = IaafConverter()
+        self.variables["wiki"] = Wikipedia()
+        self.variables["drg"] = DRGRedditScraper()
 
 
     def var_exists(self, key: str) -> bool:

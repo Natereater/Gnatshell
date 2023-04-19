@@ -7,3 +7,4 @@ matplotlib~=3.5.1
 tabulate~=0.8.9
 scikit-learn~=1.0.2
 beautifulsoup4
+praw
