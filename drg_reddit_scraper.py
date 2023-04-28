@@ -15,7 +15,7 @@ HELP = "help"
 
 
 BIOMES = {
-    'Fungus Bogs' : Fore.LIGHTGREEN_EX,
+    'Fungus Bogs': Fore.LIGHTGREEN_EX,
     'Hollow Bough': Fore.RED,
     'Crystalline Caverns': Fore.LIGHTBLUE_EX,
     'Glacial Strata': Fore.LIGHTWHITE_EX,

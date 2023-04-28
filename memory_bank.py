@@ -3,11 +3,15 @@ from colorama import init, Fore, Back, Style
 import file_system
 import data_files_util as dfu
 import os
+
 import password_manager
 from dataframe_tool import Dataframe
 from iaaf_converter import IaafConverter
 from wikipedia import Wikipedia
 from drg_reddit_scraper import DRGRedditScraper
+from trivia import Trivia
+
+import requests
 
 
 
@@ -21,7 +25,7 @@ def print_err(text):
     print(Fore.RED + text)
 
 
-RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls", "pin", "help"]
+RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls", "pin", "help", "ip"]
 
 
 
@@ -46,6 +50,7 @@ class MemoryBank:
         self.variables["wa"] = IaafConverter()
         self.variables["wiki"] = Wikipedia()
         self.variables["drg"] = DRGRedditScraper()
+        self.variables["trivia"] = Trivia()
 
 
     def var_exists(self, key: str) -> bool:
@@ -140,6 +145,9 @@ class MemoryBank:
         build_str += "EXIT GNATSHELL:\n"
         build_str += Fore.LIGHTGREEN_EX + "exit\n\n" + Fore.LIGHTBLUE_EX
 
+        build_str += "VIEW PUBLIC IP:\n"
+        build_str += Fore.LIGHTGREEN_EX + "ip\n\n" + Fore.LIGHTBLUE_EX
+
         build_str += "GET HELP ABOUT A PROGRAM:\n"
         build_str += Fore.LIGHTGREEN_EX + "[program-name] help\n" + Fore.RESET
         return build_str
@@ -177,6 +185,13 @@ class MemoryBank:
 
             elif command[0] == "cls":
                 os.system('cls' if os.name == 'nt' else 'clear')
+
+            elif command[0] == "ip":
+                try:
+                    response = requests.get("https://api.ipify.org/?format=json")
+                    print(response.json()["ip"])
+                except:
+                    print_err("ERROR: Could not get public IP.")
 
             elif command[0] == "help":
                 print(self.help())
