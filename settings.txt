@@ -4,3 +4,6 @@ FILE SYSTEM SETTINGS
 PASSWD SETTINGS
 > passwd_file:: passwd.txt
 > passwd_key:: key.key
+
+DATAFRAME SETTINGS
+> [int] round_to:: 3

@@ -3,7 +3,15 @@ from colorama import init, Fore, Back, Style
 import file_system
 import data_files_util as dfu
 import os
+
 import password_manager
+from dataframe_tool import Dataframe
+from iaaf_converter import IaafConverter
+from wikipedia import Wikipedia
+from drg_reddit_scraper import DRGRedditScraper
+from trivia import Trivia
+
+import requests
 
 
 
@@ -17,7 +25,7 @@ def print_err(text):
     print(Fore.RED + text)
 
 
-RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls"]
+RESERVED = ["cd", "ls", "pwd", "mkdir", "v", "view", "cls", "pin", "help", "ip"]
 
 
 
@@ -39,6 +47,10 @@ class MemoryBank:
         self.variables["base"] = file_system.FolderStructure(settings.get("base"))
         self.variables["passwd"] = password_manager.PasswordManager(settings.get("passwd_file"),
                                                                     settings.get("passwd_key"))
+        self.variables["wa"] = IaafConverter()
+        self.variables["wiki"] = Wikipedia()
+        self.variables["drg"] = DRGRedditScraper()
+        self.variables["trivia"] = Trivia()
 
 
     def var_exists(self, key: str) -> bool:
@@ -99,6 +111,48 @@ class MemoryBank:
         self.variables["base"].mkdir(dir_name)
 
 
+    def help(self) -> str:
+        build_str = ""
+        build_str += Fore.LIGHTBLUE_EX
+        build_str += "GNATSHELL MEMORY BANK AND FILE SYSTEM:\n"
+        build_str += "Default commands for accessing gnatshell memory and programs\n\n"
+
+        build_str += "PRINT WORKING DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "pwd\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "VIEW PROGRAMS:\n"
+        build_str += Fore.LIGHTGREEN_EX + "v\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "VIEW SPECIFIC PROGRAM:\n"
+        build_str += Fore.LIGHTGREEN_EX + "v [program-name]\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "LIST FILES IN DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "ls\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "CHANGE DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "cd [folder-name]\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "GO UP ONE DIRECTORY:\n"
+        build_str += Fore.LIGHTGREEN_EX + "cd ..\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "CLEAR SCREEN:\n"
+        build_str += Fore.LIGHTGREEN_EX + "cls\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "PIN A CSV/TSV FILE AS DATAFRAME:\n"
+        build_str += Fore.LIGHTGREEN_EX + "pin [name-to-store] [filename] " + Fore.LIGHTBLACK_EX + \
+                     "{opt:delimeter}\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "EXIT GNATSHELL:\n"
+        build_str += Fore.LIGHTGREEN_EX + "exit\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "VIEW PUBLIC IP:\n"
+        build_str += Fore.LIGHTGREEN_EX + "ip\n\n" + Fore.LIGHTBLUE_EX
+
+        build_str += "GET HELP ABOUT A PROGRAM:\n"
+        build_str += Fore.LIGHTGREEN_EX + "[program-name] help\n" + Fore.RESET
+        return build_str
+
+
     def handle(self, command:list):
         if command[0] in RESERVED:
 
@@ -131,6 +185,35 @@ class MemoryBank:
 
             elif command[0] == "cls":
                 os.system('cls' if os.name == 'nt' else 'clear')
+
+            elif command[0] == "ip":
+                try:
+                    response = requests.get("https://api.ipify.org/?format=json")
+                    print(response.json()["ip"])
+                except:
+                    print_err("ERROR: Could not get public IP.")
+
+            elif command[0] == "help":
+                print(self.help())
+
+            elif command[0] == "pin":
+                if len(command) < 3:
+                    print_err("ERROR: pinning requires a name and a value")
+                else:
+                    var_name = command[1]
+                    var_value: str = command[2]
+
+                    if var_value.endswith(".csv") or var_value.endswith(".tsv"):
+                        try:
+                            new_var = None
+                            if len(command) > 3:
+                                new_var = Dataframe(csv_name=var_value, memory_bank=self, delimeter=command[3])
+                            else:
+                                new_var = Dataframe(csv_name=var_value, memory_bank=self)
+                            self.add_var(var_name, new_var)
+                            print(Fore.LIGHTGREEN_EX + "+ " + var_name + Fore.RESET)
+                        except:
+                            print_err("ERROR: could not read file: " + command[2])
 
         else:
             if command[0] in self.variables.keys() and command[0] != "mem":
